@@ -12,8 +12,11 @@ CREATE TABLE IF NOT EXISTS reading_progress (
 CREATE TABLE IF NOT EXISTS reader_settings (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   theme TEXT DEFAULT 'system',
-  font_size INTEGER DEFAULT 16,
-  line_height NUMERIC DEFAULT 1.6,
+  font_size INTEGER DEFAULT 18,
+  line_height NUMERIC DEFAULT 1.8,
+  content_width TEXT DEFAULT 'normal',
+  font_family TEXT DEFAULT 'Georgia, serif',
+  reader_theme TEXT DEFAULT 'light',
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

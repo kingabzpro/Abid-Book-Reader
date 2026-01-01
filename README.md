@@ -32,37 +32,44 @@ Interactive way of reading my books online for free.
 ### Installation
 
 1. Clone the repository:
-```bash
-git clone <repository-url>
-cd Abid-Book-Reader
-```
+   
+   ```bash
+   git clone https://github.com/kingabzpro/Abid-Book-Reader
+   cd Abid-Book-Reader
+   ```
 
 2. Install dependencies:
-```bash
-bun install
-```
+   
+   ```bash
+   bun install
+   ```
 
 3. Set up Supabase:
+   
    - Create a new project at https://supabase.com
    - Run the SQL schema from `supabase/schema.sql` in your Supabase SQL editor
    - Copy your project URL and API keys from Supabase settings
-
+   
    **Note:** This app uses the new Supabase API key format:
+   
    - Use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for client-side operations
    - Legacy keys (`anon`, `service_role`) are supported until November 2025 but not recommended
 
 4. Create a `.env.local` file:
-```bash
-cp .env.example .env.local
-```
+   
+   ```bash
+   cp .env.example .env.local
+   ```
 
 5. Update `.env.local` with your Supabase credentials:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_sb_publishable_key
-```
+   
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_sb_publishable_key
+   ```
 
 **For server-side operations (optional):**
+
 ```env
 SUPABASE_SECRET_KEY=your_sb_secret_key
 ```
@@ -70,11 +77,13 @@ SUPABASE_SECRET_KEY=your_sb_secret_key
 ### Running the App
 
 Development:
+
 ```bash
 bun dev
 ```
 
 Production build:
+
 ```bash
 bun run build
 bun start
@@ -119,17 +128,16 @@ bun run lint
 
 1. Create a new directory under `content/books/your-book-name/`
 2. Add a `meta.json` file:
-```json
-{
-  "title": "Your Book Title",
-  "description": "Book description",
-  "author": "Your Name",
-  "coverImage": "/covers/your-book.jpg",
-  "publicChapterCount": 1
-}
-```
+   
+   ```json
+   {
+   "title": "Your Book Title",
+   "description": "Book description",
+   "author": "Your Name",
+   "coverImage": "/covers/your-book.jpg",
+   "publicChapterCount": 1
+   }
+   ```
 3. Add Markdown chapters (e.g., `01-intro.md`, `02-chapter-1.md`)
 
-## License
-
-MIT 
+## 

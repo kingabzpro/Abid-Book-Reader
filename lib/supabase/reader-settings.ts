@@ -5,6 +5,9 @@ export interface ReaderSettings {
   theme: string;
   font_size: number;
   line_height: number;
+  content_width: string;
+  font_family: string;
+  reader_theme: string;
   updated_at: string;
 }
 
@@ -12,6 +15,9 @@ export async function saveReaderSettings(settings: {
   theme?: string;
   font_size?: number;
   line_height?: number;
+  content_width?: string;
+  font_family?: string;
+  reader_theme?: string;
 }): Promise<void> {
   const supabase = createClient();
 

@@ -56,6 +56,28 @@ body {
   --color-ring: 263.4 70% 50.4%;
 }
 
+.reader-sepia {
+  --color-background: 38 50% 96%;
+  --color-foreground: 25 30% 30%;
+  --color-card: 38 50% 96%;
+  --color-card-foreground: 25 30% 30%;
+  --color-popover: 38 50% 96%;
+  --color-popover-foreground: 25 30% 30%;
+  --color-primary: 28 60% 45%;
+  --color-primary-foreground: 210 40% 98%;
+  --color-secondary: 38 30% 90%;
+  --color-secondary-foreground: 25 30% 30%;
+  --color-muted: 38 30% 90%;
+  --color-muted-foreground: 25 20% 45%;
+  --color-accent: 38 30% 90%;
+  --color-accent-foreground: 25 30% 30%;
+  --color-destructive: 0 62.8% 30.6%;
+  --color-destructive-foreground: 210 40% 98%;
+  --color-border: 28 20% 85%;
+  --color-input: 28 20% 85%;
+  --color-ring: 28 60% 45%;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -140,6 +162,7 @@ body {
   font-weight: 700;
   margin-top: 2rem;
   margin-bottom: 1rem;
+  line-height: 1.3;
 }
 
 .reader-content h1 { font-size: 1.875rem; }
@@ -148,7 +171,23 @@ body {
 
 .reader-content p {
   margin-bottom: 1.5rem;
-  line-height: 1.8;
+  text-align: justify;
+  text-justify: inter-word;
+  orphans: 2;
+  widows: 2;
+}
+
+.reader-content p:first-of-type {
+  text-indent: 2em;
+}
+
+.reader-content p:first-of-type:first-letter {
+  font-size: 3.5em;
+  font-weight: bold;
+  float: left;
+  line-height: 0.8;
+  margin-right: 0.1em;
+  margin-top: 0.1em;
 }
 
 .reader-content a {
@@ -196,6 +235,7 @@ body {
   padding-left: 1.5rem;
   margin-bottom: 1.5rem;
   font-style: italic;
+  opacity: 0.9;
 }
 
 .reader-content hr {
