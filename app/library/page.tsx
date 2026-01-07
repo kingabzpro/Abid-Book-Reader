@@ -55,7 +55,7 @@ export default async function LibraryPage() {
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Chapters</h3>
                   <div className="space-y-2">
                     {book.chapters.map((chapter, chapterIndex) => (
-                      <Link key={chapter.slug} href={`/read/${chapter.slug}`}>
+                      <Link key={chapter.slug} href={`/read/${book.id}/${chapter.slug}`}>
                         <div className="flex items-center justify-between p-4 rounded-xl border bg-muted/20 hover:bg-muted/40 hover:border-primary/20 transition-all duration-200 group">
                           <div className="flex items-center gap-3">
                             <span className="flex-shrink-0 w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">

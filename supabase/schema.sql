@@ -1,92 +1,115 @@
--- Create reading_progress table
-CREATE TABLE IF NOT EXISTS reading_progress (
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  book_id TEXT NOT NULL,
-  chapter_slug TEXT NOT NULL,
-  scroll_y INTEGER DEFAULT 0,
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (user_id, book_id)
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Authors table (for email-based author allowlist)
+CREATE TABLE IF NOT EXISTS authors (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create reader_settings table
-CREATE TABLE IF NOT EXISTS reader_settings (
-  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  theme TEXT DEFAULT 'system',
-  font_size INTEGER DEFAULT 18,
-  line_height NUMERIC DEFAULT 1.8,
-  content_width TEXT DEFAULT 'normal',
-  font_family TEXT DEFAULT 'Georgia, serif',
-  reader_theme TEXT DEFAULT 'light',
+-- Books table
+CREATE TABLE IF NOT EXISTS books (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  author_name TEXT NOT NULL,
+  cover_image_url TEXT,
+  is_published BOOLEAN DEFAULT FALSE,
+  public_chapter_count INTEGER DEFAULT 0,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS on reading_progress
-ALTER TABLE reading_progress ENABLE ROW LEVEL SECURITY;
+-- Chapters table
+CREATE TABLE IF NOT EXISTS chapters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  book_id UUID REFERENCES books(id) ON DELETE CASCADE,
+  slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  order_index INTEGER NOT NULL,
+  storage_path TEXT NOT NULL,
+  word_count INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(book_id, order_index)
+);
 
--- Enable RLS on reader_settings
-ALTER TABLE reader_settings ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on all new tables
+ALTER TABLE authors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chapters ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can only read their own reading progress
-CREATE POLICY "Users can read own reading progress"
-  ON reading_progress FOR SELECT
-  USING (auth.uid() = user_id);
+-- Authors policies
+CREATE POLICY "Public read access to authors" ON authors FOR SELECT USING (true);
+CREATE POLICY "Authors can be inserted by admins" ON authors FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authors can be updated by admins" ON authors FOR UPDATE USING (auth.role() = 'authenticated');
 
--- Policy: Users can insert their own reading progress
-CREATE POLICY "Users can insert own reading progress"
-  ON reading_progress FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- Books policies
+CREATE POLICY "Anyone can view published books" ON books FOR SELECT
+  USING (is_published = true);
 
--- Policy: Users can update their own reading progress
-CREATE POLICY "Users can update own reading progress"
-  ON reading_progress FOR UPDATE
-  USING (auth.uid() = user_id);
+CREATE POLICY "Authors can view their own books" ON books FOR SELECT
+  USING (created_by = auth.uid() OR auth.uid() IN (SELECT id FROM authors));
 
--- Policy: Users can delete their own reading progress
-CREATE POLICY "Users can delete own reading progress"
-  ON reading_progress FOR DELETE
-  USING (auth.uid() = user_id);
+CREATE POLICY "Authors can insert books" ON books FOR INSERT
+  WITH CHECK (auth.uid() IN (SELECT id FROM authors));
 
--- Policy: Users can read their own reader settings
-CREATE POLICY "Users can read own reader settings"
-  ON reader_settings FOR SELECT
-  USING (auth.uid() = user_id);
+CREATE POLICY "Authors can update their own books" ON books FOR UPDATE
+  USING (created_by = auth.uid() OR auth.uid() IN (SELECT id FROM authors));
 
--- Policy: Users can insert their own reader settings
-CREATE POLICY "Users can insert own reader settings"
-  ON reader_settings FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Authors can delete their own books" ON books FOR DELETE
+  USING (created_by = auth.uid() OR auth.uid() IN (SELECT id FROM authors));
 
--- Policy: Users can update their own reader settings
-CREATE POLICY "Users can update own reader settings"
-  ON reader_settings FOR UPDATE
-  USING (auth.uid() = user_id);
+-- Chapters policies
+CREATE POLICY "Anyone can view chapters of published books" ON chapters FOR SELECT
+  USING (
+    book_id IN (SELECT id FROM books WHERE is_published = true)
+  );
 
--- Policy: Users can delete their own reader settings
-CREATE POLICY "Users can delete own reader settings"
-  ON reader_settings FOR DELETE
-  USING (auth.uid() = user_id);
+CREATE POLICY "Authors can view chapters of their own books" ON chapters FOR SELECT
+  USING (
+    book_id IN (SELECT id FROM books WHERE created_by = auth.uid())
+    OR auth.uid() IN (SELECT id FROM authors)
+  );
 
--- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_reading_progress_user_book ON reading_progress(user_id, book_id);
-CREATE INDEX IF NOT EXISTS idx_reader_settings_user ON reader_settings(user_id);
+CREATE POLICY "Authors can insert chapters" ON chapters FOR INSERT
+  WITH CHECK (
+    book_id IN (SELECT id FROM books WHERE created_by = auth.uid())
+    OR auth.uid() IN (SELECT id FROM authors)
+  );
 
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+CREATE POLICY "Authors can update chapters" ON chapters FOR UPDATE
+  USING (
+    book_id IN (SELECT id FROM books WHERE created_by = auth.uid())
+    OR auth.uid() IN (SELECT id FROM authors)
+  );
 
--- Trigger to auto-update updated_at on reading_progress
-CREATE TRIGGER update_reading_progress_updated_at
-  BEFORE UPDATE ON reading_progress
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+CREATE POLICY "Authors can delete chapters" ON chapters FOR DELETE
+  USING (
+    book_id IN (SELECT id FROM books WHERE created_by = auth.uid())
+    OR auth.uid() IN (SELECT id FROM authors)
+  );
 
--- Trigger to auto-update updated_at on reader_settings
-CREATE TRIGGER update_reader_settings_updated_at
-  BEFORE UPDATE ON reader_settings
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_books_slug ON books(slug);
+CREATE INDEX IF NOT EXISTS idx_books_published ON books(is_published);
+CREATE INDEX IF NOT EXISTS idx_chapters_book_order ON chapters(book_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_authors_email ON authors(email);
+
+-- Updated triggers for updated_at
+CREATE TRIGGER update_books_updated_at
+  BEFORE UPDATE ON books
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_chapters_updated_at
+  BEFORE UPDATE ON chapters
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Storage bucket setup (run this in Supabase Dashboard Storage or SQL)
+-- The following creates the bucket and RLS policies:
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('books', 'books', true);
+-- RLS policies are applied to storage.objects table
