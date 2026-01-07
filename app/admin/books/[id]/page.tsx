@@ -95,7 +95,22 @@ export default function BookManagementPage({
     if (!file || !book) return;
 
     const content = await file.text();
-    await handleChapterSubmit(content, file.name);
+    setNewChapterContent(content);
+
+    // If no custom slug is provided, generate one from filename
+    if (!newChapterSlug) {
+      const generatedSlug = file.name
+        .replace(/\.md$/i, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      setNewChapterSlug(generatedSlug);
+
+      // If no title is provided, use the slug as title
+      if (!newChapterTitle) {
+        setNewChapterTitle(chapterSlugToTitle(generatedSlug));
+      }
+    }
   };
 
   const handleChapterSubmit = async (content: string, filename: string) => {
