@@ -20,7 +20,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not an author" }, { status: 403 });
     }
 
-    const { bookSlug, chapterSlug, filename } = await request.json();
+    const { bookSlug, chapterSlug, filename, content } = await request.json();
+
+    console.log("=== Upload Chapter API ===");
+    console.log("Book slug:", bookSlug);
+    console.log("Chapter slug:", chapterSlug);
+    console.log("Filename:", filename);
+    console.log("Has content:", !!content);
 
     if (!bookSlug || !chapterSlug || !filename) {
       return NextResponse.json(
@@ -30,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate filename extension
-    if (!filename.toLowerCase().endsWith(".md")) {
+    if (filename && !filename.toLowerCase().endsWith(".md")) {
       return NextResponse.json(
         { error: "Only .md files are allowed" },
         { status: 400 }
@@ -46,20 +52,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine storage path from chapterSlug (not from filename anymore)
     const storagePath = `books/${bookSlug}/chapters/${chapterSlug}.md`;
 
-    // Check if file already exists and delete it
-    const { error: removeError } = await supabaseAdmin().storage
-      .from("books")
-      .remove([storagePath]);
+    // If content is provided, upload it directly
+    if (content) {
+      console.log("Uploading content directly:", storagePath, "bytes:", content.length);
 
-    if (removeError && !removeError.message?.includes("not found")) {
-      console.error("Error removing existing file:", removeError);
-      return NextResponse.json(
-        { error: "Failed to prepare upload" },
-        { status: 500 }
-      );
+      const { error: uploadError } = await supabaseAdmin().storage
+        .from("books")
+        .upload(storagePath, content, {
+          contentType: "text/markdown",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("Error uploading content:", uploadError);
+        return NextResponse.json(
+          { error: `Failed to upload: ${uploadError.message}` },
+          { status: 500 }
+        );
+      }
+
+      console.log("Upload successful");
+      return NextResponse.json({
+        success: true,
+        path: storagePath,
+      });
     }
+
+    // Otherwise, create signed upload URL
+    console.log("Creating signed upload URL for:", storagePath);
 
     const { data, error } = await supabaseAdmin().storage
       .from("books")

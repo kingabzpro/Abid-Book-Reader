@@ -11,6 +11,10 @@ function getSupabaseAdmin(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
 
+  console.log("=== Environment Check ===");
+  console.log("NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl ? "SET" : "MISSING");
+  console.log("SUPABASE_SECRET_KEY:", secretKey ? "SET" : "MISSING");
+
   if (!supabaseUrl || !secretKey) {
     throw new Error(
       "Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY in your .env.local file."
@@ -30,7 +34,7 @@ function getSupabaseAdmin(): SupabaseClient {
 export { getSupabaseAdmin as supabaseAdmin };
 
 export async function isAuthor(userEmail: string): Promise<boolean> {
-  const { data } = await supabaseAdmin()
+  const { data } = await getSupabaseAdmin()
     .from("authors")
     .select("id")
     .eq("email", userEmail)
@@ -40,7 +44,7 @@ export async function isAuthor(userEmail: string): Promise<boolean> {
 }
 
 export async function isAuthorByUserId(userId: string): Promise<boolean> {
-  const { data: { user } } = await supabaseAdmin().auth.getUser(userId);
+  const { data: { user } } = await getSupabaseAdmin().auth.getUser(userId);
   if (!user?.email) return false;
   return isAuthor(user.email);
 }
@@ -51,7 +55,7 @@ export function getAuthorEmails(): string[] {
 }
 
 export async function checkIsAuthor(userId: string): Promise<boolean> {
-  const { data: { user } } = await supabaseAdmin().auth.getUser(userId);
+  const { data: { user } } = await getSupabaseAdmin().auth.getUser(userId);
   if (!user?.email) return false;
 
   const isInAllowlist = getAuthorEmails().includes(user.email);

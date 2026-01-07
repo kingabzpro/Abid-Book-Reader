@@ -21,6 +21,11 @@ export default function ChapterPage() {
   const [bookTitle, setBookTitle] = useState("");
   const [chapters, setChapters] = useState<any[]>([]);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
+  const [fontSize, setFontSize] = useState(18);
+  const [lineHeight, setLineHeight] = useState(1.8);
+  const [contentWidth, setContentWidth] = useState("normal");
+  const [fontFamily, setFontFamily] = useState("system-ui, sans-serif");
+  const [readerTheme, setReaderTheme] = useState("light");
 
   useEffect(() => {
     if (params.bookSlug && params.chapterSlug) {
@@ -168,7 +173,18 @@ export default function ChapterPage() {
             >
               {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <ReaderSettings />
+            <ReaderSettings
+              fontSize={fontSize}
+              lineHeight={lineHeight}
+              contentWidth={contentWidth}
+              fontFamily={fontFamily}
+              readerTheme={readerTheme}
+              onFontSizeChange={setFontSize}
+              onLineHeightChange={setLineHeight}
+              onContentWidthChange={setContentWidth}
+              onFontFamilyChange={setFontFamily}
+              onReaderThemeChange={setReaderTheme}
+            />
           </div>
         </div>
       </header>

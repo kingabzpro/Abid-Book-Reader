@@ -105,11 +105,33 @@ export default function BookManagementPage({
     setError("");
 
     try {
-      const chapterSlug = newChapterSlug || filename
-        .replace(/\.md$/i, "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+      console.log("=== handleChapterSubmit Called ===");
+      console.log("Content length:", content.length);
+      console.log("Filename parameter:", filename);
+      console.log("newChapterSlug input:", newChapterSlug);
+      console.log("newChapterTitle input:", newChapterTitle);
+      
+      // If filename is provided, use it. Otherwise, generate slug from title.
+      let chapterSlug = newChapterSlug;
+      if (!chapterSlug && filename) {
+        console.log("Using filename to generate slug");
+        chapterSlug = filename
+          .replace(/\.md$/i, "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      } else if (!chapterSlug && newChapterTitle) {
+        // Generate slug from title
+        console.log("Using title to generate slug");
+        chapterSlug = newChapterTitle
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      } else {
+        console.log("ERROR: Both filename and custom slug are empty! Will use default slug");
+        chapterSlug = "chapter-1";
+      }
+      
       const orderIndex = book.chapters.length;
       const title = newChapterTitle || chapterSlugToTitle(chapterSlug);
 
@@ -117,14 +139,16 @@ export default function BookManagementPage({
       const token = session?.access_token || "";
 
       // Create chapter record first
-      const storagePath = `books/${book.slug}/chapters/${chapterSlug}.md`;
+      const dbStoragePath = `books/${book.slug}/chapters/${chapterSlug}.md`;
 
       console.log("=== Creating Chapter Record ===");
       console.log("Book ID:", book.id);
       console.log("Book slug:", book.slug);
       console.log("Chapter title:", title);
       console.log("Chapter slug:", chapterSlug);
-      console.log("Storage path being saved:", storagePath);
+      console.log("Original filename:", filename);
+      console.log("Storage path being saved to DB:", dbStoragePath);
+      console.log("Storage path for upload:", `books/${book.slug}/chapters/${chapterSlug}.md`);
 
       const chapterResponse = await fetch("/api/chapters", {
         method: "POST",
@@ -137,7 +161,7 @@ export default function BookManagementPage({
           title,
           slug: chapterSlug,
           orderIndex,
-          storagePath,
+          storagePath: dbStoragePath,
         }),
       });
 
@@ -146,24 +170,31 @@ export default function BookManagementPage({
         throw new Error(errorData.error || "Failed to create chapter record");
       }
 
-      // Upload content to storage
-      const storagePath = `${book.slug}/chapters/${chapterSlug}.md`;
-      console.log("=== Uploading to Storage ===");
+      // Upload content to storage using signed URL API
+      const storagePath = `books/${book.slug}/chapters/${chapterSlug}.md`;
+      console.log("=== Uploading to Storage via API ===");
       console.log("Storage path:", storagePath);
       console.log("Content length:", content.length);
       console.log("Book slug:", book.slug);
       console.log("Chapter slug:", chapterSlug);
 
-      const { error: uploadError } = await supabaseAdmin().storage
-        .from("books")
-        .upload(storagePath, content, {
-          contentType: "text/markdown",
-          upsert: true,
-        });
+      const uploadResponse = await fetch("/api/upload/chapter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          bookSlug: book.slug,
+          chapterSlug,
+          filename: `${chapterSlug}.md`,
+          content,
+        }),
+      });
 
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        throw new Error(`Failed to upload content: ${uploadError.message}`);
+      if (!uploadResponse.ok) {
+        const uploadError = await uploadResponse.json();
+        throw new Error(uploadError.error || "Failed to upload content");
       }
 
       console.log("Upload successful");
