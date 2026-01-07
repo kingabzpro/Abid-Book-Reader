@@ -110,7 +110,9 @@ export default function BookManagementPage({
       console.log("Filename parameter:", filename);
       console.log("newChapterSlug input:", newChapterSlug);
       console.log("newChapterTitle input:", newChapterTitle);
-      
+
+      const orderIndex = book.chapters.length;
+
       // If filename is provided, use it. Otherwise, generate slug from title.
       let chapterSlug = newChapterSlug;
       if (!chapterSlug && filename) {
@@ -127,12 +129,10 @@ export default function BookManagementPage({
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
-      } else {
-        console.log("ERROR: Both filename and custom slug are empty! Will use default slug");
-        chapterSlug = "chapter-1";
-      }
-      
-      const orderIndex = book.chapters.length;
+       } else {
+         console.log("ERROR: Both filename and custom slug are empty! Will use default slug");
+         chapterSlug = `chapter-${orderIndex + 1}`;
+       }
       const title = newChapterTitle || chapterSlugToTitle(chapterSlug);
 
       const { data: { session } } = await supabase.auth.getSession();

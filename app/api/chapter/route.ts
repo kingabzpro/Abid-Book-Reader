@@ -86,8 +86,7 @@ export async function GET(request: NextRequest) {
         title: chapterResult.chapter.title,
         slug: chapterResult.chapter.slug,
       },
-      chapterIndex,
-      content: String(processedContent),
+      chapterIndex: book.chapters.findIndex((ch) => ch.slug === chapterSlug) - 1,
     });
   } catch (error) {
     console.error("Chapter fetch error:", error);
