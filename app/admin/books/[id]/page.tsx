@@ -126,28 +126,36 @@ export default function BookManagementPage({
       console.log("newChapterSlug input:", newChapterSlug);
       console.log("newChapterTitle input:", newChapterTitle);
 
+      // Validate that we have either a slug or content to generate from
+      if (!newChapterSlug && !newChapterTitle && !filename) {
+        setError("Please provide a chapter slug, title, or upload a file");
+        return;
+      }
+
       const orderIndex = book.chapters.length;
 
-      // If filename is provided, use it. Otherwise, generate slug from title.
+      // Use user-provided slug, or generate if not provided
       let chapterSlug = newChapterSlug;
-      if (!chapterSlug && filename) {
-        console.log("Using filename to generate slug");
-        chapterSlug = filename
-          .replace(/\.md$/i, "")
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "");
-      } else if (!chapterSlug && newChapterTitle) {
-        // Generate slug from title
-        console.log("Using title to generate slug");
-        chapterSlug = newChapterTitle
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "");
-       } else {
-         console.log("ERROR: Both filename and custom slug are empty! Will use default slug");
-         chapterSlug = `chapter-${orderIndex + 1}`;
-       }
+      if (!chapterSlug) {
+        if (filename) {
+          console.log("No slug provided, using filename to generate slug");
+          chapterSlug = filename
+            .replace(/\.md$/i, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+        } else if (newChapterTitle) {
+          // Generate slug from title
+          console.log("No slug provided, using title to generate slug");
+          chapterSlug = newChapterTitle
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+        } else {
+          console.log("ERROR: No slug, filename, or title provided! Will use default slug");
+          chapterSlug = `chapter-${orderIndex + 1}`;
+        }
+      }
       const title = newChapterTitle || chapterSlugToTitle(chapterSlug);
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -398,13 +406,13 @@ export default function BookManagementPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Chapter Slug</Label>
-                <Input
-                  value={newChapterSlug}
-                  onChange={(e) => setNewChapterSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-                  placeholder="chapter-slug (optional, auto-generated from title)"
-                />
-              </div>
+                 <Label>Chapter Slug</Label>
+                 <Input
+                   value={newChapterSlug}
+                   onChange={(e) => setNewChapterSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+                   placeholder="chapter-slug (leave empty to auto-generate from title)"
+                 />
+               </div>
               <div className="space-y-2">
                 <Label>Markdown Content</Label>
                 <textarea
